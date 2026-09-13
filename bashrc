@@ -89,6 +89,8 @@ export PATH
 export HISTTIMEFORMAT="%F %T "
 export HISTCONTROL='ignoredups:erasedups:ignorespace'
 PROMPT_COMMAND='history -a'
+export HISTSIZE=5000
+export HISTFILESIZE=5000
 
 shopt -s histappend 2>/dev/null
 shopt -s cdspell 2>/dev/null
@@ -104,17 +106,17 @@ shopt -s autocd 2>/dev/null
 [[ -f /usr/share/bash-completion/bash_completion ]] && source /usr/share/bash-completion/bash_completion
 [[ -f /etc/bash_completion ]] && source /etc/bash_completion
 
-[[ -f /opt/homebrew/opt/fzf/shell/key-bindings.bash ]] && source /opt/homebrew/opt/fzf/shell/key-bindings.bash
-[[ -f /opt/homebrew/opt/fzf/shell/completion.bash ]] && source /opt/homebrew/opt/fzf/shell/completion.bash
-
-[[ -f /usr/local/opt/fzf/shell/key-bindings.bash ]] && source /usr/local/opt/fzf/shell/key-bindings.bash
-[[ -f /usr/local/opt/fzf/shell/completion.bash ]] && source /usr/local/opt/fzf/shell/completion.bash
-
-[[ -f /usr/share/fzf/key-bindings.bash ]] && source /usr/share/fzf/key-bindings.bash
-[[ -f /usr/share/fzf/completion.bash ]] && source /usr/share/fzf/completion.bash
-
-[[ -f /usr/share/doc/fzf/examples/key-bindings.bash ]] && source /usr/share/doc/fzf/examples/key-bindings.bash
-[[ -f /usr/share/doc/fzf/examples/completion.bash ]] && source /usr/share/doc/fzf/examples/completion.bash
+for f in \
+	/opt/homebrew/opt/fzf/shell/key-bindings.bash \
+	/opt/homebrew/opt/fzf/shell/completion.bash \
+	/usr/local/opt/fzf/shell/key-bindings.bash \
+	/usr/local/opt/fzf/shell/completion.bash \
+	/usr/share/fzf/key-bindings.bash \
+	/usr/share/fzf/completion.bash \
+	/usr/share/doc/fzf/examples/key-bindings.bash \
+	/usr/share/doc/fzf/examples/completion.bash; do
+	[[ -f $f ]] && source "$f"
+done
 
 # =========================
 # Exports
@@ -131,6 +133,7 @@ else
 	export MANPAGER="less"
 fi
 
+unset LS_COLORS
 export GREP_COLORS='mt=1;36'
 export HISTSIZE=5000
 export HISTFILESIZE=5000
@@ -145,78 +148,68 @@ if command -v fd >/dev/null 2>&1; then
 	export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 fi
 
-[ -n "$TERM" ] && infocmp "$TERM" >/dev/null 2>&1 || export TERM=xterm
+if [ -z "$TERM" ]; then
+	for t in xterm-256color xterm vt100; do
+		infocmp "$t" >/dev/null 2>&1 && {
+			export TERM=$t
+			break
+		}
+	done
+	[ -z "$TERM" ] && export TERM=xterm
+fi
 
 # =========================
 # Prompt
 # =========================
 
-black="\[\e[30m\]"
-red="\[\e[31m\]"
-green="\[\e[32m\]"
-yellow="\[\e[33m\]"
-blue="\[\e[34m\]"
-magenta="\[\e[35m\]"
-cyan="\[\e[36m\]"
-white="\[\e[97m\]"
-reset="\[\e[0m\]"
+red='\[\e[31m\]'
+green='\[\e[32m\]'
+blue='\[\e[34m\]'
+reset='\[\e[0m\]'
 
-fg_light='\[\e[38;5;111m\]'
 blue_soft='\[\e[38;5;75m\]'
 light_green='\[\e[38;5;113m\]'
 light_purple='\[\e[38;5;189m\]'
 
-if [[ $EUID -eq 0 ]]; then
-	prompt_symbol="#"
-else
-	prompt_symbol="$"
-fi
+[[ $EUID -eq 0 ]] && prompt_symbol='#' || prompt_symbol='$'
 
 case "$XDG_CURRENT_DESKTOP" in
-dwm) theme="ohmyposh" ;;
-dwl) theme="ash" ;;
-i3) theme="ash-full" ;;
-*) [[ -n "$SWAYSOCK" ]] && theme="tokyonight" || theme="ash-full" ;;
+i3) theme=red ;;
+*) theme='dev' ;;
 esac
 
 case "$theme" in
 ash)
-	PS1="\w ${prompt_symbol} "
-	;;
-ash-full)
 	PS1="\w\$(git_branch) ${prompt_symbol} "
 	;;
 tokyonight)
-	PS1="${blue_soft}\u@\h ${light_green}\w ${light_purple}\${prompt_symbol} ${reset}"
+	PS1="${blue_soft}\u@\h ${light_green}\w ${light_purple}${prompt_symbol} ${reset}"
 	;;
-basic)
+default)
 	PS1="${green}\u${reset} in ${blue}\w${reset} \$ "
-	;;
-basic2)
-	PS1="${fg_light}\u${reset} in ${blue_soft}\w${reset} \$ "
 	;;
 root)
 	PS1="\u@\h: ${red}\w ${reset}${prompt_symbol} ${reset}"
+	export LS_COLORS='di=01;31:ln=01;37:so=01;31:pi=31:ex=01;31:bd=31:cd=31:*.tar=31:*.tgz=31:*.zip=31:*.gz=31:*.7z=31:*.jpg=37:*.jpeg=37:*.png=37:*.gif=37:*.mp3=31:*.mp4=31:*.mkv=31:*.pdf=37'
 	;;
 red)
 	PS1='\[\e[0;31m\][\[\e[1;37m\]\u\[\e[0;90m\]@\[\e[1;37m\]\h\[\e[0;31m\]]-\[\e[0;31m\][\[\e[1;37m\]\w\[\e[0;31m\]]\n\[\e[0;31m\]>>>\[\e[0m\] '
+	export LS_COLORS='di=01;31:ln=01;37:so=01;31:pi=31:ex=01;31:bd=31:cd=31:*.tar=31:*.tgz=31:*.zip=31:*.gz=31:*.7z=31:*.jpg=37:*.jpeg=37:*.png=37:*.gif=37:*.mp3=31:*.mp4=31:*.mkv=31:*.pdf=37'
 	;;
 blackarch_zsh)
 	PS1='\[\e[1;34m\][\[\e[0;36m\]\u\[\e[0;90m\]@\[\e[0;36m\]\h\[\e[1;34m\]]-\[\e[1;34m\][\[\e[0;37m\]\w\[\e[1;34m\]]\n\[\e[1;36m\]>>>\[\e[0m\] '
 	;;
 blackarch)
-	grey="\[\e[0;37m\]"
-	white="\[\e[1;37m\]"
-	blue="\[\e[1;34m\]"
-	cyan="\[\e[0;36m\]"
-	nc="\[\e[0m\]"
-	PS1="${blue}[ ${cyan}\H ${grey}\w${blue} ]${cyan}\$ ${nc}"
+	PS1="\[\e[1;34m\][ \[\e[0;36m\]\H \[\e[0;37m\]\w\[\e[1;34m\] ]\[\e[0;36m\]\$ \[\e[0m\]"
+	;;
+dev)
+	PS1="\[\e[38;5;111m\]\w\[\e[38;5;141m\]\$(git_branch)\[\e[0m\]\n\[\e[38;5;111m\]❯ \[\e[0m\]"
 	;;
 starship)
 	eval "$(starship init bash)"
 	;;
 *)
-	PS1="${fg_light}\u${reset} in ${blue_soft}\w${reset}${white}\$(git_branch) ${prompt_symbol} "
+	echo "Life is hard, my friend; this laptop makes it harder ;)"
 	;;
 esac
 
@@ -278,7 +271,8 @@ fi
 git_branch() {
 	local branch
 	branch=$(git branch --show-current 2>/dev/null)
-	[[ -n $branch ]] && printf " %s" "$branch"
+	[[ -n $branch ]] && printf ' \xee\x82\xa0%s' "$branch"
+	# [[ -n $branch ]] && printf " %s" "$branch"
 }
 
 vf() {
@@ -359,38 +353,37 @@ rmk() {
 command -v fzf >/dev/null 2>&1 && eval "$(fzf --bash)"
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash)"
 
-if command -v nala >/dev/null 2>&1; then
-	apt() {
-		if [ "$(id -u)" -eq 0 ]; then
-			command nala "$@"
-		elif command -v doas >/dev/null 2>&1; then
-			command doas nala "$@"
-		else
-			command sudo nala "$@"
-		fi
-	}
+_run_root() {
+	if [ "$(id -u)" -eq 0 ]; then
+		"$@"
+	elif command -v doas >/dev/null 2>&1; then
+		command doas "$@"
+	elif command -v sudo >/dev/null 2>&1; then
+		command sudo "$@"
+	fi
+}
 
-	\sudo() {
-		if [ "$1" = "apt" ]; then
-			shift
-			if [ "$(id -u)" -eq 0 ]; then
-				command nala "$@"
-			elif command -v doas >/dev/null 2>&1; then
-				command doas nala "$@"
+if command -v nala >/dev/null 2>&1; then
+	apt() { _run_root nala "$@"; }
+
+	# only where sudo itself is real (not aliased to doas)
+	if command -v sudo >/dev/null 2>&1 && ! alias sudo >/dev/null 2>&1; then
+		sudo() {
+			if [ "$1" = "apt" ]; then
+				shift
+				_run_root nala "$@"
 			else
-				command sudo nala "$@"
+				command sudo "$@"
 			fi
-		else
-			command sudo "$@"
-		fi
-	}
+		}
+	fi
 fi
 
 command -v cargo >/dev/null 2>&1 && [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
-[[ "$TERM" = "linux" && -f /usr/share/kbd/consolefonts/ter-119b.psf.gz ]] && setfont ter-119b
+[[ $TERM = linux && -f /usr/share/kbd/consolefonts/ter-119b.psf.gz ]] && setfont ter-119b
 
-if command -v startx >/dev/null && [ -z "$DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
+if command -v startx >/dev/null && [[ -z $DISPLAY && $XDG_VTNR = 1 ]]; then
 	startx
 fi
 
